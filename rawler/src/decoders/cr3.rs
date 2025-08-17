@@ -317,12 +317,19 @@ impl<'a> Decoder for Cr3Decoder<'a> {
     };
 
     let cpp = 1;
+    let metadata = self.raw_metadata(file, params)?;
+    let orientation = if let Some(orientation) = metadata.exif.orientation {
+      Orientation::from_u16(orientation)
+    } else {
+      Orientation::Normal
+    };
     let blacklevel = cr3md
       .blacklevels
       .map(|x| BlackLevel::new(&x, self.camera.cfa.width, self.camera.cfa.height, cpp));
     let whitelevel = WhiteLevel(vec![whitelevel as u32]);
     let photometric = RawPhotometricInterpretation::Cfa(CFAConfig::new_from_camera(&self.camera));
     let mut img = RawImage::new(self.camera.clone(), image, cpp, wb, photometric, blacklevel, Some(whitelevel), dummy);
+    img.orientation = orientation;
 
     // IAD1 box contains sensor information
     // We use the sensor crop from IAD1 as recommended image crop.
